@@ -1,0 +1,51 @@
+{
+	"compilerOptions": {
+		"baseUrl": ".",
+		"paths": {
+			"@": [ "./src" ],
+			"@/*": [ "./src/*" ],
+			"model": [ "./src/model" ],
+			"model/*": [ "./src/model/*" ],
+			"rendering": [ "./src/rendering" ],
+			"rendering/*": [ "./src/rendering/*" ],
+			"types": [ "./src/types" ],
+			"util": [ "./src/util" ],
+			"util/*": [ "./src/util/*" ]
+		},
+		"lib": [ "DOM", "DOM.Iterable", "ESNext" ],
+		"skipLibCheck": true,
+		"resolveJsonModule": true,
+		"allowSyntheticDefaultImports": true,
+		"esModuleInterop": true,
+		"allowUmdGlobalAccess": true,
+
+		"outDir": "./dist/",
+		"jsx": "react-jsx",
+		"allowJs": true,
+
+		"target": "ESNext",
+		"module": "ESNext",
+		"moduleResolution": "node",
+
+		"noImplicitAny": false,
+
+		"useDefineForClassFields": true,
+		"experimentalDecorators": true,
+		"emitDecoratorMetadata": true,
+
+		"forceConsistentCasingInFileNames": true
+	},
+	"include": [
+		"./src/**/*"
+	],
+	"exclude": [
+		"node_modules",
+		"dist",
+		"./**/*.old.*"
+	],
+	"typeAcquisition": {
+		"exclude": [
+			"dist"
+		]
+	}
+}
