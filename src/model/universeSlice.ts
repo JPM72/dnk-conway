@@ -137,7 +137,7 @@ export const universeSelectors = {
 		selectCellMap
 	], cellMap =>
 	{
-		const a = [];
+		const a = []
 		cellMap.overCells((r, c) => a.push([r, c]))
 		return encodePattern(a)
 	})

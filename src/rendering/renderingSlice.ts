@@ -4,7 +4,7 @@ import type { AppState, AppThunk } from '@/app'
 import { createAppSelector } from '@/app/creators'
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { createRenderingSelector } from './createRenderingSelector'
-import { universeThunks } from '@/model'
+import { universeThunks, type PatternKey } from '@/model'
 
 const name = 'rendering'
 
@@ -16,6 +16,7 @@ export interface RenderingState
 	gridLines: boolean
 	ticking: boolean
 	interval: number
+	patternKey: PatternKey | null
 }
 
 const initialState = (): RenderingState => ({
@@ -25,6 +26,7 @@ const initialState = (): RenderingState => ({
 	gridLines: true,
 	ticking: false,
 	interval: 16,
+	patternKey: null,
 })
 
 const slice = createSlice({
@@ -47,6 +49,10 @@ const slice = createSlice({
 		setInterval(state, { payload: interval }: PayloadAction<number>)
 		{
 			return safeMerge(state, { interval })
+		},
+		setPatternKey(state, { payload: patternKey }: PayloadAction<string>)
+		{
+			return safeMerge(state, { patternKey })
 		},
 		toggleGridLines: (state, { payload: gridLines }) => safeMerge(state, {
 			gridLines: !!gridLines,
@@ -76,6 +82,7 @@ export const renderingSelectors = {
 	gridLines: createAppSelector([rootSelector], ({ gridLines }) => gridLines),
 	cellSideLength: createAppSelector([rootSelector], ({ cellSideLength }) => cellSideLength),
 	interval: createAppSelector([rootSelector], ({ interval }) => interval),
+	patternKey: createAppSelector([rootSelector], ({ patternKey }) => patternKey),
 	cellDimensions: selectCellDimensions,
 	parameters: createAppSelector([
 		rootSelector,
@@ -112,6 +119,11 @@ export const renderingThunks = {
 			dispatch(actions.toggleTicking(!ticking))
 		},
 	},
+	setPattern: (patternKey: PatternKey | null): AppThunk => dispatch =>
+	{
+		dispatch(universeThunks.setPattern(patternKey))
+		dispatch(actions.setPatternKey(patternKey))
+	}
 }
 
 export

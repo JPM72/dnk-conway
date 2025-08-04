@@ -83,4 +83,10 @@ const decodePattern = (pattern) =>
 	} as Pattern & SerializedCellMap
 }
 
-export const Patterns = _.mapValues(patternData, decodePattern)
+export const Patterns = _.mapValues(patternData, (p, k) =>
+{
+	const decoded = decodePattern(p)
+	decoded.name ??= k
+	return decoded
+})
+export type PatternKey = keyof typeof Patterns

@@ -123,13 +123,13 @@ module.exports = (_env, argv) =>
 				progress: true,
 				reconnect: 3,
 			},
-			server: {
-				type: 'https',
-				options: {
-					key: fs.readFileSync('C:/xampp/apache/conf/ssl.key/server.key'),
-					cert: fs.readFileSync('C:/xampp/apache/conf/ssl.crt/server.crt'),
-				},
-			},
+			// server: {
+			// 	type: 'https',
+			// 	options: {
+			// 		key: fs.readFileSync('C:/xampp/apache/conf/ssl.key/server.key'),
+			// 		cert: fs.readFileSync('C:/xampp/apache/conf/ssl.crt/server.crt'),
+			// 	},
+			// },
 			open: {
 				app: {
 					name: 'C:/Program Files/Google/Chrome/Application/chrome.exe',

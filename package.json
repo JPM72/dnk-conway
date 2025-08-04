@@ -25,6 +25,8 @@
     "@babel/runtime": "^7.26.0",
     "@reduxjs/toolkit": "^2.5.0",
     "@types/lodash": "^4.17.13",
+    "@types/react": "^19.1.9",
+    "@types/react-dom": "^19.1.7",
     "babel-loader": "^9.2.1",
     "classnames": "^2.5.1",
     "css-loader": "^7.1.2",
