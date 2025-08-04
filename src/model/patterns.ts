@@ -2,6 +2,47 @@ import patternData from './patterns.json'
 import type { SerializedCellMap } from './CellMap'
 import type { Pattern } from '@/types'
 
+const encodeRun = (runCount: number, alive: boolean) =>
+{
+	if (!runCount) return ''
+	return `${runCount > 1 ? runCount : ''}${alive ? 'o' : 'b'}`
+}
+
+const encodeRow = (columns: number[], rowLength: number) =>
+{
+	if (columns.length === rowLength) return encodeRun(rowLength, true)
+	const colSet = new Set(columns)
+
+	let
+		i = -1,
+		s = '',
+		runCount = 1
+	while (++i < rowLength)
+	{
+		const alive = colSet.has(i)
+		const nextAlive = i + 1 >= rowLength ? !alive : colSet.has(i + 1)
+		if (alive === nextAlive)
+		{
+			runCount++
+			continue
+		} else
+		{
+			s += encodeRun(runCount, alive)
+			runCount = 1
+		}
+
+	}
+	return s
+}
+export const encodePattern = (cells: number[][]) =>
+{
+	const rowLength = _(cells).map(c => c[1]).max() + 1
+	const rows = _(cells).groupBy(_.first).mapValues(
+		a => a.map(n => n[1])
+	).value()
+	return _(rows).map(r => encodeRow(r, rowLength)).join('$') + '!'
+}
+
 const decodeLine = (line: string, rowNumber: number) =>
 {
 	const runs = _.words(line, /(\d+)?\w/g)
@@ -29,7 +70,7 @@ const decodePatternRLE = ({ pattern }: { pattern: string }) =>
 	let p = pattern
 	if (p.endsWith('!')) p = p.slice(0, -1)
 
-	return _(p).split('$').flatMap((line, rowNumber) => decodeLine(line, rowNumber)).value()
+	return _(p).split('$').flatMap(decodeLine).value()
 }
 
 const decodePattern = (pattern) =>

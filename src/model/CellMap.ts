@@ -211,12 +211,6 @@ export class CellMap extends Map<number, Map<number, boolean>>
 
 	getCellFate(row: number, column: number, previous: boolean)
 	{
-		// let neighborCount = 0
-		// this.overNeighbors(
-		// 	row, column,
-		// 	(r, c) => neighborCount += +this.hasCell(r, c)
-		// )
-		// return CellMap.GetCellTransition(previous, neighborCount)
 		return CellMap.GetCellTransition(
 			previous,
 			this.getNeighborCount(row, column)

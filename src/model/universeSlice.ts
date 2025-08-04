@@ -5,8 +5,8 @@ import { createAppSelector } from '@/app/creators'
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
 import { type SerializedCellMap, type SerializedCellMapCoordinates, CellMap } from './CellMap'
 import { createModelSelector } from './createModelSelector'
-import { Patterns } from './patterns'
-import { renderingSelectors, type RenderingState } from '@/rendering'
+import { Patterns, encodePattern } from './patterns'
+import { renderingSelectors, renderingThunks, type RenderingState } from '@/rendering'
 
 const cellStore = []
 const name = 'universe'
@@ -132,7 +132,15 @@ export const universeSelectors = {
 	generation: createAppSelector([universeRootSelector], ({ generation }) => generation),
 	delta: createAppSelector([
 		universeRootSelector,
-	], ({ cells, deaths }) => _.merge({}, { cells, deaths }))
+	], ({ cells, deaths }) => _.merge({}, { cells, deaths })),
+	patternRle: createAppSelector([
+		selectCellMap
+	], cellMap =>
+	{
+		const a = [];
+		cellMap.overCells((r, c) => a.push([r, c]))
+		return encodePattern(a)
+	})
 }
 
 // const thunks = createActionThunks(actions)
@@ -150,6 +158,7 @@ const clearHistory = (): AppThunk => (dispatch) =>
 const reset = (): AppThunk => (dispatch, getState) =>
 {
 	dispatch(clearHistory())
+	dispatch(renderingThunks.ticking.stop())
 	const rendering = renderingSelectors.root(getState())
 	dispatch(actions.reset(getInitialState(rendering)))
 }

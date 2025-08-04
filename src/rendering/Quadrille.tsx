@@ -8,7 +8,6 @@ import { useAppDispatch, useAppSelector } from '@/app'
 const onMouseMove = _.throttle(({ nativeEvent: event }) =>
 {
 	console.log({
-		// ...points,
 		..._.pick(event, [
 			'offsetX',
 			'offsetY',
@@ -46,35 +45,6 @@ const onCanvasClick = (parameters: RenderingParameters) =>
 	}
 }
 
-// function useQuadrille({
-// 	canvas,
-// 	cellMap,
-// 	rendering,
-// }: {
-// 	canvas: React.MutableRefObject<HTMLCanvasElement>,
-// 	cellMap: CellMap,
-// 	rendering: RenderingParameters,
-// })
-// {
-// 	const { ticking } = rendering
-// 	const dispatch = useAppDispatch()
-// 	useEffect(() =>
-// 	{
-// 		const context = canvas.current.getContext('2d')
-// 		const isEmpty = !cellMap.size
-
-// 		draw.cells(context, rendering, cellMap)
-
-// 		if (!isEmpty && ticking)
-// 		{
-// 			const id = setInterval(() =>
-// 			{
-// 				dispatch(universeThunks.tick())
-// 			}, 20)
-// 			return () => clearInterval(id)
-// 		}
-// 	}, [cellMap, ticking])
-// }
 function useQuadrille({
 	canvas,
 }: {
@@ -128,7 +98,7 @@ export function Quadrille()
 			}
 		}
 	}, [cellMap])
-	// useQuadrille({ canvas: canvasRef, cellMap, rendering: parameters })
+
 	useQuadrille({ canvas: canvasRef })
 
 	return <canvas {...{
@@ -141,6 +111,5 @@ export function Quadrille()
 			border: '1px solid #2F343C'
 		},
 		...onCanvasClick(parameters),
-		// onMouseMove,
 	}} />
 }

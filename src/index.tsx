@@ -40,8 +40,9 @@ function View()
 // const store = createAppStore()
 Object.assign(window, {
 	// store,
-	// universeSelectors,
-	// getCellMap: () => universeSelectors.cellMap(store.getState())
+	universeSelectors,
+	// @ts-ignore
+	getCellMap: () => universeSelectors.cellMap(store.getState()),
 	CellMap,
 })
 
