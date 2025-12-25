@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git tag:*)",
+      "Bash(git push:*)",
+      "Bash(git checkout:*)",
+      "Bash(git config:*)",
+      "Bash(cmdkey /list:*)",
+      "Bash(findstr:*)",
+      "Bash(~/.git-credentials.tmp)",
+      "mcp__github-personal__get_me",
+      "Bash(git show:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)",
+      "mcp__github-personal__list_branches",
+      "mcp__github-personal__list_tags"
+    ]
+  }
+}

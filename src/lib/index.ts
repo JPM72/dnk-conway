@@ -1,0 +1,5 @@
+export { ConwayGame, createConwayGame } from './ConwayGame'
+export { CellMap } from './CellMap'
+export { CellTiles } from './CellTiles'
+export { encodePattern, decodePattern, loadPatterns } from './patterns'
+export type { Pattern, ConwayOptions } from './types'

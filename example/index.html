@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Conway's Game of Life - Library Demo</title>
+	<style>
+		body {
+			font-family: system-ui, -apple-system, sans-serif;
+			max-width: 1200px;
+			margin: 0 auto;
+			padding: 2rem;
+			background: #f5f5f5;
+		}
+		h1 {
+			margin-bottom: 1rem;
+		}
+		.controls {
+			display: flex;
+			gap: 0.5rem;
+			margin-bottom: 1rem;
+			flex-wrap: wrap;
+		}
+		button {
+			padding: 0.5rem 1rem;
+			border: none;
+			background: #2F343C;
+			color: white;
+			border-radius: 4px;
+			cursor: pointer;
+			font-size: 14px;
+		}
+		button:hover {
+			background: #1a1d23;
+		}
+		button:disabled {
+			background: #ccc;
+			cursor: not-allowed;
+		}
+		.info {
+			margin-bottom: 1rem;
+			font-size: 14px;
+			color: #666;
+		}
+		#canvas {
+			background: white;
+			border: 1px solid #2F343C;
+			cursor: crosshair;
+			display: block;
+		}
+	</style>
+</head>
+<body>
+	<h1>Conway's Game of Life</h1>
+	<div class="info">
+		Generation: <span id="generation">0</span> |
+		Left-click to add cells, Right-click to remove cells
+	</div>
+	<div class="controls">
+		<button id="play">▶ Play</button>
+		<button id="step">Step</button>
+		<button id="undo">↶ Undo</button>
+		<button id="reset">Reset</button>
+		<button id="glider">Glider</button>
+		<button id="blinker">Blinker</button>
+		<button id="toad">Toad</button>
+	</div>
+	<canvas id="canvas"></canvas>
+
+	<script type="module">
+		import { createConwayGame } from '../dist/index.js'
+
+		const canvas = document.getElementById('canvas')
+		const generationDisplay = document.getElementById('generation')
+		const playButton = document.getElementById('play')
+		const stepButton = document.getElementById('step')
+		const undoButton = document.getElementById('undo')
+		const resetButton = document.getElementById('reset')
+
+		// Predefined patterns
+		const patterns = {
+			glider: 'bo$2bo$3o!',
+			blinker: '3o!',
+			toad: 'b3o$3o!',
+		}
+
+		const game = createConwayGame({
+			canvas,
+			width: 800,
+			height: 800,
+			cellSize: 20,
+			gridLines: true,
+			interval: 100,
+			onGeneration: (gen) => {
+				generationDisplay.textContent = gen
+				undoButton.disabled = gen === 0
+			}
+		})
+
+		game.init()
+
+		// Controls
+		playButton.addEventListener('click', () => {
+			if (game.isRunning()) {
+				game.stop()
+				playButton.textContent = '▶ Play'
+			} else {
+				game.start()
+				playButton.textContent = '⏸ Pause'
+			}
+		})
+
+		stepButton.addEventListener('click', () => game.step())
+		undoButton.addEventListener('click', () => game.undo())
+		resetButton.addEventListener('click', () => {
+			game.reset()
+			if (game.isRunning()) {
+				game.stop()
+				playButton.textContent = '▶ Play'
+			}
+		})
+
+		// Pattern buttons
+		document.getElementById('glider').addEventListener('click', () => {
+			game.setPattern(patterns.glider)
+		})
+		document.getElementById('blinker').addEventListener('click', () => {
+			game.setPattern(patterns.blinker)
+		})
+		document.getElementById('toad').addEventListener('click', () => {
+			game.setPattern(patterns.toad)
+		})
+
+		// Mouse interaction
+		canvas.addEventListener('click', (e) => {
+			const [row, col] = game.coordinatesFromEvent(e)
+			game.addCell(row, col)
+		})
+
+		canvas.addEventListener('contextmenu', (e) => {
+			e.preventDefault()
+			const [row, col] = game.coordinatesFromEvent(e)
+			game.removeCell(row, col)
+		})
+	</script>
+</body>
+</html>

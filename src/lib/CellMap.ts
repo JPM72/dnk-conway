@@ -1,18 +1,3 @@
-export type SerializedCellMapCoordinates = {
-	[k: string]: {
-		[j: string]: boolean
-	}
-}
-export interface SerializedCellMap
-{
-	x: number,
-	y: number,
-	deaths: number[][]
-	cells: SerializedCellMapCoordinates
-}
-
-const parseInt = Number.parseInt
-
 export class CellMap extends Map<number, Map<number, boolean>>
 {
 	static GetCellTransition(alive: boolean, neighborCount: number)
@@ -22,42 +7,13 @@ export class CellMap extends Map<number, Map<number, boolean>>
 			: neighborCount === 3
 	}
 
-	static FromSerialized(serialized: SerializedCellMap)
+	static FromUint8Array(array: Uint8Array, x: number, y: number): CellMap
 	{
-		const { x, y, deaths = [], cells } = serialized
-		const cm = new CellMap({ x, y, deaths })
-
-		_.forEach(cells, (m, r) =>
-		{
-			const row = parseInt(r)
-			_.forEach(m, (v, c) =>
-			{
-				cm.setCell(row, parseInt(c))
-			})
-		})
-		return cm
-	}
-
-	static CellsToUint8Array(cells: SerializedCellMapCoordinates)
-	{
-		const rows = _.flatMap(cells, (c, r) => [parseInt(r), _.size(c)])
-		const columns = _.flatMap(cells, c => _.keys(c).map(x => parseInt(x)))
-		const columnOffset = rows.length / 2
-		return new Uint8Array([
-			columnOffset,
-			...rows,
-			...columns
-		])
-	}
-
-	static Uint8ArrayToCells(array: Uint8Array<ArrayBuffer>)
-	{
+		const cellMap = new CellMap({ x, y })
 		const columnOffset = 1 + array[0] * 2
 
 		const rowValues = array.slice(1, columnOffset)
 		const columnValues = array.slice(columnOffset)
-
-		const cells: SerializedCellMapCoordinates = {}
 
 		const len = rowValues.length
 		let i = 0, j = 0
@@ -66,37 +22,32 @@ export class CellMap extends Map<number, Map<number, boolean>>
 			const r = rowValues[i]
 			const n = rowValues[i + 1]
 
-			columnValues.slice(j, j + n).forEach(c => _.setWith(cells, [r, c], true, Object))
+			for (let k = 0; k < n; k++)
+			{
+				cellMap.setCell(r, columnValues[j + k])
+			}
 
 			i += 2
 			j += n
 		}
-		return cells
+
+		return cellMap
 	}
 
-	/** Right <-> Left and Top <-> Bottom wrap-around behavior  */
 	toroidal: boolean = true
-
 	x: number
 	y: number
 	deaths: number[][] = []
-	constructor({
-		x = 5,
-		y = x,
-		deaths = [],
-	}: {
-		x?: number,
-		y?: number,
-		deaths?: number[][],
-	})
+
+	constructor({ x = 5, y = x, deaths = [] }: { x?: number, y?: number, deaths?: number[][] } = {})
 	{
 		super()
 		this.x = x
 		this.y = y
-		this.deaths = _.cloneDeep(deaths)
+		this.deaths = deaths.slice()
 	}
 
-	clone()
+	clone(): CellMap
 	{
 		const { x, y, deaths } = this
 		const next = new CellMap({ x, y, deaths })
@@ -104,16 +55,16 @@ export class CellMap extends Map<number, Map<number, boolean>>
 		return next
 	}
 
-	hasCell(row: number, column: number)
+	hasCell(row: number, column: number): boolean
 	{
 		return !!this.get(row)?.get(column)
 	}
 
-	setCell(row: number, column: number)
+	setCell(row: number, column: number): this
 	{
 		if (this.has(row))
 		{
-			this.get(row).set(column, true)
+			this.get(row)!.set(column, true)
 		} else
 		{
 			this.set(row, new Map([[column, true]]))
@@ -121,33 +72,35 @@ export class CellMap extends Map<number, Map<number, boolean>>
 		return this
 	}
 
-	addCell(row: number, column: number)
+	addCell(row: number, column: number): this
 	{
 		if (this.hasCell(row, column)) return this
 		this.setCell(row, column)
-		_.pullAllWith(this.deaths, [[row, column]], _.isEqual)
+		this.deaths = this.deaths.filter(([r, c]) => r !== row || c !== column)
 		return this
 	}
 
-	removeCell(row: number, column: number)
+	removeCell(row: number, column: number): this
 	{
 		if (!this.hasCell(row, column)) return this
 		const columns = this.get(row)
-		columns.delete(column)
-		if (!columns.size) this.delete(row)
-		/* shouldnt have a danger of duplicates since an alive cell shouldnt have a death entry */
+		if (columns)
+		{
+			columns.delete(column)
+			if (!columns.size) this.delete(row)
+		}
 		this.deaths.push([row, column])
 		return this
 	}
 
-	setDimensions(x: number = this.x, y: number = this.y)
+	setDimensions(x: number = this.x, y: number = this.y): this
 	{
 		this.x = x
 		this.y = y
 		return this
 	}
 
-	overCells(fn: (r: number, c: number) => any)
+	overCells(fn: (r: number, c: number) => any): void
 	{
 		for (const [row, columns] of this)
 		{
@@ -157,7 +110,8 @@ export class CellMap extends Map<number, Map<number, boolean>>
 			}
 		}
 	}
-	overNeighbors(row: number, column: number, fn: (r: number, c: number) => any)
+
+	overNeighbors(row: number, column: number, fn: (r: number, c: number) => any): void
 	{
 		const { x, y, toroidal } = this
 
@@ -199,35 +153,26 @@ export class CellMap extends Map<number, Map<number, boolean>>
 				let c = column - 2, d = column + 2
 				while (++c < d)
 				{
-					if (
-						(c < 0 || c === y)
-						|| (a === row && c === column)
-					) continue
+					if ((c < 0 || c === y) || (a === row && c === column)) continue
 					fn(a, c)
 				}
 			}
 		}
 	}
 
-	getCellFate(row: number, column: number, previous: boolean)
+	getCellFate(row: number, column: number, previous: boolean): boolean
 	{
-		return CellMap.GetCellTransition(
-			previous,
-			this.getNeighborCount(row, column)
-		)
+		return CellMap.GetCellTransition(previous, this.getNeighborCount(row, column))
 	}
 
-	getNeighborCount(row: number, column: number)
+	getNeighborCount(row: number, column: number): number
 	{
 		let neighborCount = 0
-		this.overNeighbors(
-			row, column,
-			(r, c) => neighborCount += +this.hasCell(r, c)
-		)
+		this.overNeighbors(row, column, (r, c) => (neighborCount += +this.hasCell(r, c)))
 		return neighborCount
 	}
 
-	tick()
+	tick(): CellMap
 	{
 		const { x, y } = this
 		const next = new CellMap({ x, y })
@@ -251,16 +196,27 @@ export class CellMap extends Map<number, Map<number, boolean>>
 		return next
 	}
 
-	getBoundaries()
+	getBoundaries(): { x: [number, number], y: [number, number] }
 	{
-		const x = _([...this.values()]).flatMap(m => [...m.keys()]).thru(
-			a => [_.min(a), _.max(a)]
-		).value()
-		const y = _([...this.keys()]).thru(a => [_.min(a), _.max(a)]).value()
-		return { x, y }
+		const columns: number[] = []
+		const rows: number[] = []
+
+		for (const [row, cols] of this)
+		{
+			rows.push(row)
+			for (const [col] of cols)
+			{
+				columns.push(col)
+			}
+		}
+
+		return {
+			x: [Math.min(...columns), Math.max(...columns)],
+			y: [Math.min(...rows), Math.max(...rows)],
+		}
 	}
 
-	center()
+	center(): CellMap
 	{
 		const { x, y } = this
 		const boundaries = this.getBoundaries()
@@ -275,7 +231,7 @@ export class CellMap extends Map<number, Map<number, boolean>>
 		return this.translate(a, b)
 	}
 
-	translate(a = 0, b = a)
+	translate(a = 0, b = a): CellMap
 	{
 		const { x, y } = this
 		if (a >= y || b >= x) return this
@@ -296,24 +252,21 @@ export class CellMap extends Map<number, Map<number, boolean>>
 		return next
 	}
 
-	serialize()
+	toUint8Array(): Uint8Array
 	{
-		const { x, y, deaths } = this
-		return {
-			x, y,
-			deaths: _.cloneDeep(deaths),
-			cells: _.mapValues(
-				Object.fromEntries(this),
-				m => Object.fromEntries(m)
-			)
-		}
-	}
+		const rows: number[] = []
+		const columns: number[] = []
 
-	log()
-	{
-		const array = _.times(this.x, () => _.times(this.y, () => ' '))
-		this.overCells((r, c) => array[r][c] = 'X')
-		console.log('%s', array.map(a => a.join('')).join('\n'))
+		for (const [row, cols] of this)
+		{
+			rows.push(row, cols.size)
+			for (const [col] of cols)
+			{
+				columns.push(col)
+			}
+		}
+
+		const columnOffset = rows.length / 2
+		return new Uint8Array([columnOffset, ...rows, ...columns])
 	}
 }
-export default CellMap
