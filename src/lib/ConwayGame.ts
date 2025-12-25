@@ -124,22 +124,11 @@ export class ConwayGame
 	{
 		this.reset()
 
-		if (typeof pattern === 'string')
+		const cells = decodePattern(pattern)
+		this.cellMap.clear()
+		for (const [row, col] of cells)
 		{
-			const cells = decodePattern({ pattern })
-			this.cellMap.clear()
-			for (const [row, col] of cells)
-			{
-				this.cellMap.setCell(row, col)
-			}
-		} else
-		{
-			const cells = decodePattern(pattern)
-			this.cellMap.clear()
-			for (const [row, col] of cells)
-			{
-				this.cellMap.setCell(row, col)
-			}
+			this.cellMap.setCell(row, col)
 		}
 
 		this.cellMap = this.cellMap.center()

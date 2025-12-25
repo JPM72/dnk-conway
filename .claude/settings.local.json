@@ -13,7 +13,8 @@
       "Bash(git add:*)",
       "Bash(git commit:*)",
       "mcp__github-personal__list_branches",
-      "mcp__github-personal__list_tags"
+      "mcp__github-personal__list_tags",
+      "Bash(npm run build:*)"
     ]
   }
 }
