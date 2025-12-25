@@ -3,20 +3,31 @@ import type { Coordinates } from '@/types'
 import { safeMerge } from '@/util'
 import { createAppSelector } from '@/app/creators'
 import { createSlice, type PayloadAction } from '@reduxjs/toolkit'
-import { type SerializedCellMap, type SerializedCellMapCoordinates, CellMap } from './CellMap'
+import
+	{
+		type SerializedCellMap,
+		type SerializedCellMapCoordinates,
+		CellMap,
+	} from './CellMap'
 import { createModelSelector } from './createModelSelector'
 import { Patterns, encodePattern } from './patterns'
-import { renderingSelectors, renderingThunks, type RenderingState } from '@/rendering'
+import
+	{
+		renderingSelectors,
+		renderingThunks,
+		type RenderingState,
+	} from '@/rendering'
 
-const cellStore = []
 const name = 'universe'
 
 export interface UniverseState extends SerializedCellMap
 {
+	history: number[][]
 	generation: number
 }
 
 const initialState = (): UniverseState => ({
+	history: [],
 	x: 10,
 	y: 10,
 	deaths: [],
@@ -58,7 +69,10 @@ const slice = createSlice({
 			}
 			return { ...state, x, y }
 		},
-		cellsSet(state, { payload: cells }: PayloadAction<SerializedCellMapCoordinates>)
+		cellsSet(
+			state,
+			{ payload: cells }: PayloadAction<SerializedCellMapCoordinates>
+		)
 		{
 			const { cells: current } = state
 			const deaths = []
@@ -85,79 +99,113 @@ const slice = createSlice({
 		{
 			return {
 				...state,
-				...CellMap.FromSerialized(state).clone().addCell(...coordinates).serialize()
+				...CellMap.FromSerialized(state)
+					.clone()
+					.addCell(...coordinates)
+					.serialize(),
 			}
 		},
-		cellRemoved(state, { payload: coordinates }: PayloadAction<Coordinates>)
+		cellRemoved(
+			state,
+			{ payload: coordinates }: PayloadAction<Coordinates>
+		)
 		{
 			return {
 				...state,
-				...CellMap.FromSerialized(state).clone().removeCell(...coordinates).serialize()
+				...CellMap.FromSerialized(state)
+					.clone()
+					.removeCell(...coordinates)
+					.serialize(),
 			}
 		},
-		tick: state =>
+		tick: (state) =>
 		{
 			return {
 				...state,
-				...CellMap.FromSerialized(state).tick().serialize()
+				...CellMap.FromSerialized(state).tick().serialize(),
 			}
 		},
-		reset: (state, { payload: newState }: PayloadAction<Partial<UniverseState>>) =>
+		reset: (
+			state,
+			{ payload: newState }: PayloadAction<Partial<UniverseState>>
+		) =>
 		{
 			return _.assign(initialState(), newState)
 		},
-		generationSet: (state, { payload: generation }: PayloadAction<number>) =>
+		generationSet: (
+			state,
+			{ payload: generation }: PayloadAction<number>
+		) =>
 		{
 			return { ...state, generation }
-		}
+		},
+		historyPushed(
+			state,
+			{ payload: history }: PayloadAction<number[]>
+		)
+		{
+			return {
+				...state,
+				history: [...state.history, history],
+			}
+		},
+		historyPopped(state)
+		{
+			return {
+				...state,
+				history: state.history.toSpliced(-1, 1),
+			}
+		},
 	},
 })
 const { actions } = slice
 export const universeRootSelector = createModelSelector<UniverseState>(name)
 
-const selectCells = createAppSelector([
-	universeRootSelector
-], ({ cells }) => cells)
-const selectDimensions = createAppSelector([
-	universeRootSelector,
-], ({ x, y }) => [x, y])
-const selectCellMap = createAppSelector([
-	universeRootSelector,
-], state => CellMap.FromSerialized(state))
+const selectCells = createAppSelector(
+	[universeRootSelector],
+	({ cells }) => cells
+)
+const selectHistory = createAppSelector(
+	[universeRootSelector],
+	({ history }) => history
+)
+const selectDimensions = createAppSelector(
+	[universeRootSelector],
+	({ x, y }) => [x, y]
+)
+const selectCellMap = createAppSelector([universeRootSelector], (state) =>
+	CellMap.FromSerialized(state)
+)
 
 export const universeSelectors = {
 	cells: selectCells,
 	dimensions: selectDimensions,
 	cellMap: selectCellMap,
-	generation: createAppSelector([universeRootSelector], ({ generation }) => generation),
-	delta: createAppSelector([
-		universeRootSelector,
-	], ({ cells, deaths }) => _.merge({}, { cells, deaths })),
-	patternRle: createAppSelector([
-		selectCellMap
-	], cellMap =>
+	generation: createAppSelector(
+		[universeRootSelector],
+		({ generation }) => generation
+	),
+	delta: createAppSelector([universeRootSelector], ({ cells, deaths }) =>
+		_.merge({}, { cells, deaths })
+	),
+	patternRle: createAppSelector([selectCellMap], (cellMap) =>
 	{
 		const a = []
 		cellMap.overCells((r, c) => a.push([r, c]))
 		return encodePattern(a)
-	})
+	}),
+	isSteadyState: createAppSelector([selectHistory], (history) =>
+		_.isEqual(history.at(-1), history.at(-2))
+	),
 }
 
-// const thunks = createActionThunks(actions)
-
-
-const setGeneration = (): AppThunk => dispatch =>
+const setGeneration = (): AppThunk => (dispatch, getState) =>
 {
-	dispatch(actions.generationSet(cellStore.length))
-}
-const clearHistory = (): AppThunk => (dispatch) =>
-{
-	cellStore.splice(0, Infinity)
-	dispatch(setGeneration())
+	const history = selectHistory(getState())
+	dispatch(actions.generationSet(history.length))
 }
 const reset = (): AppThunk => (dispatch, getState) =>
 {
-	dispatch(clearHistory())
 	dispatch(renderingThunks.ticking.stop())
 	const rendering = renderingSelectors.root(getState())
 	dispatch(actions.reset(getInitialState(rendering)))
@@ -165,52 +213,73 @@ const reset = (): AppThunk => (dispatch, getState) =>
 const saveSnapshot = (): AppThunk => (dispatch, getState) =>
 {
 	const cells = selectCells(getState())
-	cellStore.push(CellMap.CellsToUint8Array(cells))
+	dispatch(actions.historyPushed(CellMap.CellsToArray(cells)))
 	dispatch(setGeneration())
 }
 
-const tick = (): AppThunk => dispatch =>
+const tick = (): AppThunk => (dispatch) =>
 {
 	dispatch(saveSnapshot())
 	dispatch(actions.tick())
 }
-const untick = (): AppThunk => dispatch =>
+const untick = (): AppThunk => (dispatch, getState) =>
 {
-	if (!cellStore.length) return
-	const cells = CellMap.Uint8ArrayToCells(cellStore.pop())
+	const history = selectHistory(getState())
+	if (!history.length) return
+	const cells = CellMap.Uint8ArrayToCells(history.at(-1))
+	dispatch(actions.historyPopped())
 	dispatch(setGeneration())
 	dispatch(actions.cellsSet(cells))
 }
-const setPattern = (pattern: keyof typeof Patterns): AppThunk => (dispatch, getState) =>
-{
-	dispatch(reset())
-	const state = getState()
-	const dimensions = renderingSelectors.cellDimensions(state)
-	dispatch(actions.patternSet(_.assign({}, Patterns[pattern], dimensions)))
-	// dispatch(actions.dimensionsSet(dimensions))
-}
+const setPattern =
+	(patternKey: keyof typeof Patterns): AppThunk =>
+		(dispatch, getState) =>
+		{
+			dispatch(reset())
+			const pattern = Patterns[patternKey]
+			if (!pattern) return
+			const state = getState()
+			const dimensions = renderingSelectors.cellDimensions(state)
+			dispatch(
+				actions.patternSet(_.assign({}, pattern, dimensions))
+			)
+		}
 
-const addCell = (coordinates: Coordinates): AppThunk => (dispatch, getState) =>
-{
-	const cells = selectCells(getState())
-	if (_.get(cells, coordinates)) return
-	dispatch(saveSnapshot())
-	dispatch(actions.cellAdded(coordinates))
-}
-const removeCell = (coordinates: Coordinates): AppThunk => (dispatch, getState) =>
-{
-	const cells = selectCells(getState())
-	if (!_.get(cells, coordinates)) return
-	dispatch(saveSnapshot())
-	dispatch(actions.cellRemoved(coordinates))
-}
+const addCell =
+	(coordinates: Coordinates): AppThunk =>
+		(dispatch, getState) =>
+		{
+			const cells = selectCells(getState())
+			if (_.get(cells, coordinates)) return
+			dispatch(saveSnapshot())
+			dispatch(actions.cellAdded(coordinates))
+		}
+const removeCell =
+	(coordinates: Coordinates): AppThunk =>
+		(dispatch, getState) =>
+		{
+			const cells = selectCells(getState())
+			console.log({
+				coordinates,
+				cells,
+				has: _.get(cells, coordinates)
+			})
+			if (!_.get(cells, coordinates)) return
+			dispatch(saveSnapshot())
+			dispatch(actions.cellRemoved(coordinates))
+		}
 
 export const universeThunks = {
 	reset,
 	tick,
 	untick,
 	setPattern,
-	setDimensions: (dimensions): AppThunk => dispatch => { dispatch(actions.dimensionsSet(dimensions)) },
+	setDimensions:
+		(dimensions): AppThunk =>
+			(dispatch) =>
+			{
+				dispatch(actions.dimensionsSet(dimensions))
+			},
 	addCell,
 	removeCell,
 }

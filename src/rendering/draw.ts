@@ -78,7 +78,10 @@ const drawCells = (
 	cellMap: CellMap,
 ) =>
 {
-	const { cellSideLength } = parameters
+	const { width,  height, cellSideLength } = parameters
+	context.clearRect(0, 0, width, height)
+	drawFrame(context, parameters)
+	drawGridLines(context, parameters)
 	tiles.setSideLength(cellSideLength)
 
 	for (const [row, columns] of cellMap)

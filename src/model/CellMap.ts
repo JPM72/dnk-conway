@@ -38,19 +38,24 @@ export class CellMap extends Map<number, Map<number, boolean>>
 		return cm
 	}
 
-	static CellsToUint8Array(cells: SerializedCellMapCoordinates)
+	static CellsToArray(cells: SerializedCellMapCoordinates)
 	{
 		const rows = _.flatMap(cells, (c, r) => [parseInt(r), _.size(c)])
 		const columns = _.flatMap(cells, c => _.keys(c).map(x => parseInt(x)))
 		const columnOffset = rows.length / 2
-		return new Uint8Array([
+		return [
 			columnOffset,
 			...rows,
 			...columns
-		])
+		]
 	}
 
-	static Uint8ArrayToCells(array: Uint8Array<ArrayBuffer>)
+	static CellsToUint8Array(cells: SerializedCellMapCoordinates)
+	{
+		return new Uint8Array(this.CellsToArray(cells))
+	}
+
+	static Uint8ArrayToCells(array: number[] | Uint8Array<ArrayBuffer>)
 	{
 		const columnOffset = 1 + array[0] * 2
 

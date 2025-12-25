@@ -21,8 +21,8 @@ function Controls()
 				{_.map(Patterns, (p, k) => <option key={k} value={k}>{p.name}</option>)}
 			</select>
 			<button
-				onClick={() => dispatch(universeThunks.setPattern('pentadecathlon'))}
-				disabled={ticking}
+				onClick={() => dispatch(renderingThunks.setPattern(patternKey))}
+				disabled={!patternKey || ticking}
 			>set pattern</button>
 			<button
 				onClick={() => dispatch(renderingThunks.ticking.toggle())}
